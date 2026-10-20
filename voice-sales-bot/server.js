@@ -238,7 +238,12 @@ export function createApp(config, { fetchImpl = globalThis.fetch } = {}) {
         time: new Date().toISOString(),
         uptimeSeconds: Math.round(process.uptime()),
         ai: describeAi(config),
-        storage: { type: 'sqlite', persistent: true },
+        storage: {
+          type: 'sqlite',
+          persistent: !config.storage.ephemeral,
+          mode: config.storage.mode,
+          platform: config.storage.platform,
+        },
       });
     }
 
@@ -249,6 +254,12 @@ export function createApp(config, { fetchImpl = globalThis.fetch } = {}) {
         products: publicProducts(),
         languages: enabledLanguages(),
         salesStatuses: SALES_STATUSES,
+        storage: {
+          type: 'sqlite',
+          persistent: !config.storage.ephemeral,
+          mode: config.storage.mode,
+          platform: config.storage.platform,
+        },
         limits: {
           messageMaxLength: config.limits.messageMaxLength,
           recordingMaxBytes: config.limits.recordingMaxBytes,
@@ -694,6 +705,11 @@ export function startServer({ config = loadConfig(process.env), fetchImpl } = {}
       const ai = describeAi(config);
       console.log(`Voxly AI Voice Sales Bot listening on http://${config.host}:${config.port}`);
       console.log(`Storage: ${app.store.dbPath}`);
+      console.log(
+        config.storage.ephemeral
+          ? 'Storage: EPHEMERAL (serverless /tmp) — call history resets when the instance recycles.'
+          : 'Storage: persistent disk',
+      );
       if (ai.configured) {
         console.log(`AI provider: ${ai.provider} (model: ${ai.model})`);
       } else {

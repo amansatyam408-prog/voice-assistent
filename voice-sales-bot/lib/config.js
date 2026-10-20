@@ -77,6 +77,17 @@ export function loadConfig(env = process.env, { projectRoot = PROJECT_ROOT } = {
 
   const dataDir = path.resolve(projectRoot, env.DATA_DIR || path.join('voice-sales-bot', 'data'));
 
+  // Serverless platforms (Vercel, etc.) only offer an ephemeral /tmp filesystem,
+  // so the SQLite database and recordings cannot outlive a function instance.
+  // This is surfaced to the UI instead of failing or pretending to persist.
+  const onServerless = Boolean(env.VERCEL || env.AWS_LAMBDA_FUNCTION_NAME || env.NETLIFY);
+  // Auto-detect ephemeral storage unless EPHEMERAL_STORAGE explicitly overrides it.
+  const explicitEphemeral = String(env.EPHEMERAL_STORAGE ?? '').trim().toLowerCase();
+  const ephemeralStorage =
+    explicitEphemeral === ''
+      ? dataDir.startsWith('/tmp') || onServerless
+      : ['1', 'true', 'yes'].includes(explicitEphemeral);
+
   return {
     projectRoot,
     port: intFrom(env.PORT, 3000, { min: 1, max: 65535 }),
@@ -118,6 +129,11 @@ export function loadConfig(env = process.env, { projectRoot = PROJECT_ROOT } = {
       staleAfterMinutes: intFrom(env.ACTIVE_CALL_TTL_MINUTES, 30, { min: 1, max: 720 }),
     },
     adminToken: (env.ADMIN_TOKEN || '').trim(),
+    storage: {
+      ephemeral: ephemeralStorage,
+      mode: ephemeralStorage ? 'ephemeral-disk' : 'persistent-disk',
+      platform: onServerless ? 'serverless' : 'node',
+    },
   };
 }
 

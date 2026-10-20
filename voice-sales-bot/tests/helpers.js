@@ -18,6 +18,9 @@ export function makeConfig(envOverrides = {}) {
     GEMINI_FALLBACK_MODELS: '',
     AI_TIMEOUT_MS: '5000',
     AI_REQUESTS_PER_MINUTE: '600',
+    // Emulate a normal deployment with a real disk so persistence assertions are
+    // meaningful; serverless/ephemeral detection is covered in validation.test.js.
+    EPHEMERAL_STORAGE: 'false',
     ...envOverrides,
   };
   const config = loadConfig(env, { projectRoot: tmp });

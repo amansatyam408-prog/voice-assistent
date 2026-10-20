@@ -81,6 +81,9 @@ const els = {
   summaryBody: $('#summaryBody'),
   regenSummaryBtn: $('#regenSummaryBtn'),
   newCallBtn: $('#newCallBtn'),
+  storageBanner: $('#storageBanner'),
+  storageBannerText: $('#storageBannerText'),
+  storageBannerDismiss: $('#storageBannerDismiss'),
   resumeBanner: $('#resumeBanner'),
   resumeText: $('#resumeText'),
   resumeBtn: $('#resumeBtn'),
@@ -259,6 +262,7 @@ async function loadConfig() {
       state.activeCall = config.activeCall;
       showResume(config.activeCall);
     }
+    renderStorageMode(config);
     if (config.limits?.messageMaxLength) els.textInput.maxLength = config.limits.messageMaxLength;
   } catch (error) {
     els.aiPill.dataset.state = 'error';
@@ -269,6 +273,28 @@ async function loadConfig() {
     els.aiProvider.textContent = '—';
     toast(error.message, 'error', error.code);
   }
+}
+
+const STORAGE_DISMISS_KEY = 'voxly.storageBannerDismissed';
+
+function renderStorageMode(config) {
+  const storage = config.storage;
+  const persistent = storage ? storage.persistent !== false : true;
+  if (!persistent) {
+    let dismissed = false;
+    try {
+      dismissed = window.sessionStorage.getItem(STORAGE_DISMISS_KEY) === '1';
+    } catch {
+      dismissed = false;
+    }
+    els.storageBanner.hidden = dismissed;
+    els.storageBannerText.textContent = `This instance stores calls on the serverless temporary disk (${storage?.platform || 'serverless'}), so call history, summaries and recordings reset when the instance recycles. Run the same code with a persistent disk (Render, Docker, Fly) for permanent history.`;
+  } else {
+    els.storageBanner.hidden = true;
+  }
+  els.footerStorage.textContent = persistent
+    ? ' Storage: persistent SQLite database.'
+    : ' Storage: temporary serverless disk in this deployment.';
 }
 
 function renderProducts() {
@@ -1896,6 +1922,15 @@ function wire() {
     const id = state.activeCall?.id;
     if (id) endResumedCall(id);
     else hideResume();
+  });
+
+  els.storageBannerDismiss.addEventListener('click', () => {
+    els.storageBanner.hidden = true;
+    try {
+      window.sessionStorage.setItem(STORAGE_DISMISS_KEY, '1');
+    } catch {
+      /* storage may be unavailable in private modes */
+    }
   });
 
   els.refreshHistoryBtn.addEventListener('click', loadHistory);

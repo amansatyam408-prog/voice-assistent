@@ -59,6 +59,20 @@
         </div>
       </div>
 
+      <div class="banner banner-info" id="storageBanner" hidden role="status">
+        <div>
+          <strong>Demo deployment with temporary storage.</strong>
+          <span id="storageBannerText">
+            This instance stores calls on the serverless temporary disk, so call history, summaries and
+            recordings reset when the instance recycles. Run the same code with a persistent disk
+            (Render, Docker, Fly) for permanent history.
+          </span>
+        </div>
+        <div class="banner-actions">
+          <button class="btn btn-ghost btn-sm" id="storageBannerDismiss" type="button">Dismiss</button>
+        </div>
+      </div>
+
       <main id="main">
         <!-- ============================ DIALER ============================ -->
         <section class="view is-active" id="view-dialer" role="tabpanel" aria-labelledby="tab-dialer" tabindex="-1">

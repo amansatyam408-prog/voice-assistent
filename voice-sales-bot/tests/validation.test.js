@@ -148,6 +148,19 @@ test('config selects providers and never exposes secrets', () => {
   assert.equal(explicit.ai.provider, 'openai');
 });
 
+test('storage mode is detected and reported for serverless deployments', () => {
+  const local = loadConfig({ GEMINI_API_KEY: 'x', DATA_DIR: './voice-sales-bot/data' }, { projectRoot: '/app' });
+  assert.equal(local.storage.ephemeral, false);
+  assert.equal(local.storage.platform, 'node');
+
+  const vercel = loadConfig({ GEMINI_API_KEY: 'x', VERCEL: '1', DATA_DIR: '/tmp/voxly-data' }, { projectRoot: '/app' });
+  assert.equal(vercel.storage.ephemeral, true);
+  assert.equal(vercel.storage.platform, 'serverless');
+
+  const tmpOnly = loadConfig({ GEMINI_API_KEY: 'x', DATA_DIR: '/tmp/anything' }, { projectRoot: '/app' });
+  assert.equal(tmpOnly.storage.ephemeral, true);
+});
+
 test('product knowledge base is complete and public view hides internals', () => {
   assert.ok(PRODUCTS.length >= 4);
   for (const product of PRODUCTS) {

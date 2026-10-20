@@ -146,6 +146,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   color: #ffe6b8; font-size: 0.9rem;
 }
 .banner strong { color: var(--amber); }
+.banner-info {
+  border-color: rgba(123, 196, 255, 0.4);
+  background: rgba(123, 196, 255, 0.1);
+  color: #d6ebff;
+}
+.banner-info strong { color: var(--blue); }
+.banner-info .btn-ghost { background: rgba(255, 255, 255, 0.06); border-color: rgba(123, 196, 255, 0.3); }
 .banner-actions { display: flex; gap: 8px; }
 
 main { flex: 1; }
