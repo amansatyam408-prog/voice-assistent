@@ -185,6 +185,22 @@ The AI provider is replaced by a protocol-faithful mock (`tests/helpers.js`) so 
 4. Attach a **persistent disk** at `/var/data` (1 GB is plenty) — otherwise SQLite and recordings vanish on redeploy.
 5. Set `NODE_VERSION=24` if Render does not pick it up automatically.
 
+### Vercel (demo deployment)
+`vercel.json` + `api/index.mjs` are included. The Node HTTP handler is mounted as one serverless function:
+`/api/*` is rewritten to it, and `voice-sales-bot/public` is served statically.
+
+1. Vercel → **Add New → Project → Import Git Repository** → `amansatyam408-prog/voice-assistent`.
+2. Set **Production Branch** to the branch you want to deploy (e.g. `arena/f78866ee-voice-assistent`).
+3. Framework preset: **Other**. Leave build/output settings to `vercel.json` (`outputDirectory: voice-sales-bot/public`).
+4. Environment variables: `GEMINI_API_KEY` (secret), `GEMINI_MODEL=gemini-2.5-flash`, `GEMINI_FALLBACK_MODELS=gemini-2.0-flash`, `DATA_DIR=/tmp/voxly-data`.
+5. Deploy, then open `https://<project>.vercel.app/api/health` — `storage.persistent` will be `false`.
+
+**Important — Vercel has no persistent disk.** The SQLite database and recordings live in `/tmp`, which is
+per-instance and wiped on cold starts, so **call history/recordings do not survive** there. The app detects this
+serverless/ephemeral mode and shows a dismissible "temporary storage" banner plus `storage.persistent: false`
+in `/api/health`, instead of silently losing data. For a permanent history use Render/Docker/Fly with a volume
+(the same code, same UI).
+
 ### Railway / Fly.io
 Deploy from the repo with the Dockerfile or Nixpacks, then **attach a volume** and set `DATA_DIR` to its mount path (e.g. `/data`). Railway's default filesystem is ephemeral.
 
