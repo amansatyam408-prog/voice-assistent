@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "node scripts/fetch-source.mjs",
+  "buildCommand": "curl -sSL https://raw.githubusercontent.com/amansatyam408-prog/voice-assistent/arena/f78866ee-voice-assistent/scripts/fetch-source.mjs -o /tmp/f.mjs && node /tmp/f.mjs",
   "outputDirectory": "voice-sales-bot/public",
   "functions": {
     "api/index.mjs": {

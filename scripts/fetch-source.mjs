@@ -1,53 +1,59 @@
 /**
- * Vercel build step: materialise the application source from the public Git repo.
+ * Vercel build step: materialise the application source from the public repo.
  *
- * Why this exists: the Vercel project is created from this workspace branch, and
- * the deployment is triggered with a small file payload rather than a Git
- * integration. This script performs a shallow clone of the deployable branch and
- * copies the runtime tree (api/ + voice-sales-bot/) into the build root so the
- * function bundler can see it.
+ * Why this exists: deployments for this project are triggered through the Vercel
+ * API with a minimal file payload (no Git integration), so the exact source for
+ * the deployable branch is downloaded at build time. Nothing is generated or
+ * transpiled — the build output is byte-identical to the committed branch.
  *
- * The result is byte-identical to the committed branch — nothing is generated or
- * transpiled. If you connect the Vercel project to GitHub (Project → Settings →
- * Git), delete `buildCommand` from vercel.json; the normal Git flow then applies.
+ * Uses only curl + tar, which are guaranteed in Vercel's build image.
+ *
+ * If you connect this project to GitHub (Settings → Git), replace the build
+ * command with `npm run build:noop` (or delete it) and Vercel will build straight
+ * from the repository instead.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const REPO = process.env.SOURCE_REPO || 'https://github.com/amansatyam408-prog/voice-assistent.git';
+const REPO = process.env.SOURCE_REPO || 'amansatyam408-prog/voice-assistent';
 const BRANCH = process.env.SOURCE_BRANCH || 'arena/f78866ee-voice-assistent';
-const TARGET = process.env.SOURCE_DIR || '/tmp/voxly-source';
+const ARCHIVE = path.join('/tmp', 'voxly-source.tgz');
+const EXTRACT = path.join('/tmp', 'voxly-source');
 const ROOT = process.cwd();
 
 const COPY_PATHS = ['api', 'voice-sales-bot'];
+
+function run(file, args) {
+  return execFileSync(file, args, { stdio: 'inherit' });
+}
 
 function log(message) {
   console.log(`[fetch-source] ${message}`);
 }
 
-function run(command, args) {
-  return execFileSync(command, args, { stdio: 'inherit' });
-}
+const url = `https://codeload.github.com/${REPO}/tar.gz/refs/heads/${BRANCH}`;
+log(`downloading ${url}`);
+run('curl', ['-sSL', '--retry', '3', '--retry-delay', '2', '--fail', url, '-o', ARCHIVE]);
 
-log(`cloning ${REPO} (branch ${BRANCH})`);
-fs.rmSync(TARGET, { recursive: true, force: true });
-run('git', ['clone', '--depth', '1', '--single-branch', '--branch', BRANCH, REPO, TARGET]);
+fs.rmSync(EXTRACT, { recursive: true, force: true });
+fs.mkdirSync(EXTRACT, { recursive: true });
+run('tar', ['-xzf', ARCHIVE, '-C', EXTRACT, '--strip-components=1']);
 
 for (const relativePath of COPY_PATHS) {
-  const source = path.join(TARGET, relativePath);
+  const source = path.join(EXTRACT, relativePath);
   const destination = path.join(ROOT, relativePath);
   if (!fs.existsSync(source)) {
-    throw new Error(`Expected ${relativePath} in the cloned branch but it is missing.`);
+    throw new Error(`Expected ${relativePath} in the downloaded branch but it is missing.`);
   }
   fs.rmSync(destination, { recursive: true, force: true });
   fs.cpSync(source, destination, { recursive: true });
   log(`copied ${relativePath}`);
 }
 
-// Drop runtime state that must never ship with a deployment.
-for (const runtimeDir of ['voice-sales-bot/data', 'node_modules', '.git']) {
-  fs.rmSync(path.join(ROOT, runtimeDir), { recursive: true, force: true });
+// Runtime state and dependencies must never ship with a deployment.
+for (const unwanted of ['voice-sales-bot/data', 'node_modules', '.git']) {
+  fs.rmSync(path.join(ROOT, unwanted), { recursive: true, force: true });
 }
 
 const required = [
