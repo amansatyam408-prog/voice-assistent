@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "buildCommand": "echo \"static assets are prebuilt\"",
+  "buildCommand": "node scripts/fetch-source.mjs",
   "outputDirectory": "voice-sales-bot/public",
   "functions": {
     "api/index.mjs": {
