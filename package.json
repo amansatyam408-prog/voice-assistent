@@ -1,0 +1,14 @@
+{
+  "name": "voice-sales-bot-root",
+  "version": "1.0.0",
+  "description": "AI Voice Sales Bot Root Workspace",
+  "type": "module",
+  "scripts": {
+    "start": "node voice-sales-bot/server.js",
+    "dev": "node --watch voice-sales-bot/server.js",
+    "test": "node --test voice-sales-bot/tests/*.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
