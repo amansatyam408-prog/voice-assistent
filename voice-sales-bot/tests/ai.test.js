@@ -38,19 +38,60 @@ test('generateReply calls the real Gemini endpoint server-side and returns model
   const [call] = fetchImpl.calls;
   assert.match(call.url, /generativelanguage\.googleapis\.com/);
   assert.match(call.url, /models\/gemini-test:generateContent/);
-  assert.match(call.url, /key=test-gemini-key/);
+  assert.match(call.url, /key=test-gemini-key/, 'auto mode tries the ?key= form first');
   assert.match(call.systemText, /Voxly/);
   assert.equal(call.body.contents.at(-1).role, 'user');
   assert.equal(call.body.contents.at(-1).parts[0].text, 'How much is FlowPilot?');
 });
 
-test('OAuth-style keys are sent as a bearer token instead of a query key', async () => {
-  const config = makeConfig({ GEMINI_API_KEY: 'AQ.oauth-token' });
+test('GEMINI_AUTH_MODE=bearer pins OAuth-style auth instead of a query key', async () => {
+  const config = makeConfig({ GEMINI_API_KEY: 'AQ.oauth-token', GEMINI_AUTH_MODE: 'bearer' });
   const fetchImpl = mockGemini({ reply: 'Sure.' });
   await generateReply({ config, product, language: 'en', messages: [], fetchImpl });
   const [call] = fetchImpl.calls;
   assert.equal(call.headers.authorization, 'Bearer AQ.oauth-token');
   assert.ok(!call.url.includes('key='));
+});
+
+test('auto auth retries with Bearer when the key form is rejected', async () => {
+  const config = makeConfig({ GEMINI_API_KEY: 'AQ.token-that-needs-bearer' });
+  assert.equal(config.ai.gemini.authMode, 'auto');
+  const seen = [];
+  const fetchImpl = async (url, options = {}) => {
+    seen.push({ url, authorization: options.headers?.authorization });
+    if (url.includes('key=')) {
+      return jsonResponse(
+        { error: { code: 401, message: 'API key not valid', status: 'UNAUTHENTICATED' } },
+        401,
+      );
+    }
+    return geminiTextResponse('Bearer auth worked.');
+  };
+  const result = await generateReply({ config, product, language: 'en', messages: [], fetchImpl });
+  assert.equal(result.text, 'Bearer auth worked.');
+  assert.equal(seen.length, 2);
+  assert.match(seen[0].url, /key=/);
+  assert.equal(seen[1].authorization, 'Bearer AQ.token-that-needs-bearer');
+});
+
+test('auto auth reports a clear error when both auth styles are rejected', async () => {
+  // Same model listed as fallback keeps the model list at one entry.
+  const config = makeConfig({ GEMINI_FALLBACK_MODELS: 'gemini-test' });
+  let attempts = 0;
+  const fetchImpl = async () => {
+    attempts += 1;
+    return jsonResponse({ error: { message: 'invalid credential' } }, 401);
+  };
+  await assert.rejects(
+    generateReply({ config, product, language: 'en', messages: [], fetchImpl }),
+    (error) => {
+      assert.equal(error.code, 'AI_AUTH_ERROR');
+      assert.match(error.message, /rejected the credential/);
+      assert.match(error.message, /Bearer/);
+      return true;
+    },
+  );
+  assert.equal(attempts, 2, 'both auth styles are attempted');
 });
 
 test('missing provider configuration fails loudly instead of faking a reply', async () => {
@@ -74,7 +115,7 @@ test('authentication failures surface as AI_AUTH_ERROR with the real status', as
     (error) => {
       assert.equal(error.code, 'AI_AUTH_ERROR');
       assert.equal(error.providerStatus, 401);
-      assert.match(error.message, /rejected the API key/);
+      assert.match(error.message, /rejected the credential/);
       return true;
     },
   );
@@ -94,7 +135,11 @@ test('rate limits surface as AI_RATE_LIMITED', async () => {
 });
 
 test('an unknown model falls back to the configured fallback model', async () => {
-  const config = makeConfig({ GEMINI_MODEL: 'gemini-missing', GEMINI_FALLBACK_MODELS: 'gemini-working' });
+  const config = makeConfig({
+    GEMINI_MODEL: 'gemini-missing',
+    GEMINI_FALLBACK_MODELS: 'gemini-working',
+    GEMINI_AUTH_MODE: 'key',
+  });
   const seen = [];
   const fetchImpl = async (url) => {
     seen.push(url);

@@ -129,13 +129,15 @@ test('input validators reject bad data', () => {
 test('config selects providers and never exposes secrets', () => {
   const gemini = loadConfig({ GEMINI_API_KEY: 'AIzaTESTKEY', GEMINI_MODEL: 'gemini-2.5-flash', ALLOW_OFFLINE_DEMO: 'true' }, { projectRoot: '/tmp' });
   assert.equal(gemini.ai.provider, 'gemini');
-  assert.equal(gemini.ai.gemini.authMode, 'key');
+  assert.equal(gemini.ai.gemini.authMode, 'auto');
   const described = JSON.stringify(describeAi(gemini));
   assert.ok(!described.includes('AIzaTESTKEY'), 'describeAi must not leak the API key');
   assert.equal(describeAi(gemini).configured, true);
 
-  const bearer = loadConfig({ GEMINI_API_KEY: 'AQ.some-oauth-token' }, { projectRoot: '/tmp' });
-  assert.equal(bearer.ai.gemini.authMode, 'bearer');
+  const autoAuth = loadConfig({ GEMINI_API_KEY: 'AQ.some-token' }, { projectRoot: '/tmp' });
+  assert.equal(autoAuth.ai.gemini.authMode, 'auto', 'auth style is auto-detected at request time');
+  const pinned = loadConfig({ GEMINI_API_KEY: 'AQ.some-token', GEMINI_AUTH_MODE: 'bearer' }, { projectRoot: '/tmp' });
+  assert.equal(pinned.ai.gemini.authMode, 'bearer');
 
   const openai = loadConfig({ OPENAI_API_KEY: 'sk-test' }, { projectRoot: '/tmp' });
   assert.equal(openai.ai.provider, 'openai');

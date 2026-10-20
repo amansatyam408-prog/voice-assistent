@@ -130,6 +130,14 @@ function extractGeminiText(payload) {
   throw new AIError('The AI model returned an empty response.', { code: 'AI_EMPTY_RESPONSE', httpStatus: 502 });
 }
 
+function geminiRequest({ baseUrl, apiVersion, model, apiKey, authMode }) {
+  const url = new URL(`${baseUrl}/${apiVersion}/models/${encodeURIComponent(model)}:generateContent`);
+  const headers = { 'content-type': 'application/json' };
+  if (authMode === 'bearer') headers.authorization = `Bearer ${apiKey}`;
+  else url.searchParams.set('key', apiKey);
+  return { url: url.toString(), headers };
+}
+
 async function callGemini({ config, systemPrompt, messages, jsonMode = false, fetchImpl }) {
   const { apiKey, model, fallbackModels, baseUrl, apiVersion, authMode, timeoutMs } = config.ai.gemini;
   const contents = transcriptToContents(messages);
@@ -152,60 +160,77 @@ async function callGemini({ config, systemPrompt, messages, jsonMode = false, fe
     ].map((category) => ({ category, threshold: 'BLOCK_MEDIUM_AND_ABOVE' })),
   };
 
-  const headers = { 'content-type': 'application/json' };
-  const query = new URLSearchParams();
-  if (authMode === 'bearer') headers.authorization = `Bearer ${apiKey}`;
-  else query.set('key', apiKey);
-
+  // "auto" tries the query-parameter key first, then a Bearer token.
+  const authModes = authMode === 'auto' ? ['key', 'bearer'] : [authMode];
   const models = [model, ...fallbackModels];
+  let authError = null;
 
-  for (let index = 0; index < models.length; index += 1) {
-    const candidateModel = models[index];
-    const url = `${baseUrl}/${apiVersion}/models/${encodeURIComponent(candidateModel)}:generateContent${
-      query.size ? `?${query.toString()}` : ''
-    }`;
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      let response;
-      try {
-        response = await fetchImpl(url, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(timeoutMs),
-        });
-      } catch (error) {
-        const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-        if (attempt === 0) {
-          await sleep(400);
+  for (const candidateModel of models) {
+    for (const mode of authModes) {
+      const { url, headers } = geminiRequest({
+        baseUrl,
+        apiVersion,
+        model: candidateModel,
+        apiKey,
+        authMode: mode,
+      });
+
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        let response;
+        try {
+          response = await fetchImpl(url, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+        } catch (error) {
+          const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+          if (attempt === 0) {
+            await sleep(400);
+            continue;
+          }
+          throw new AIError(
+            timedOut
+              ? `Gemini did not respond within ${Math.round(timeoutMs / 1000)}s. Check the network connection and try again.`
+              : `Could not reach Gemini: ${error?.message || 'network error'}. Check outbound network access.`,
+            { code: timedOut ? 'AI_TIMEOUT' : 'AI_NETWORK_ERROR', httpStatus: 504 },
+          );
+        }
+
+        if (response.ok) {
+          const payload = await response.json().catch(() => null);
+          if (!payload) throw new AIError('Gemini returned a malformed JSON response.', { code: 'AI_BAD_RESPONSE' });
+          return { text: extractGeminiText(payload), model: candidateModel };
+        }
+
+        const raw = await readErrorBody(response);
+
+        // Auth failures are meaningful: remember them and try the other style.
+        if (response.status === 401 || response.status === 403) {
+          authError = providerHttpError('Gemini', response.status, raw);
+          authError.message =
+            'Gemini rejected the credential (HTTP ' +
+            response.status +
+            '). Tried both ?key= and Authorization: Bearer. Check that GEMINI_API_KEY is a valid AI Studio API key (or a non-expired OAuth access token) with access to the configured model.';
+          break;
+        }
+
+        const maybeModelMissing =
+          response.status === 404 ||
+          (response.status === 400 && /not found|unsupported|not supported/i.test(raw));
+        if (maybeModelMissing) break; // try the next model / auth mode
+
+        if ((response.status === 429 || response.status >= 500) && attempt === 0) {
+          await sleep(700);
           continue;
         }
-        throw new AIError(
-          timedOut
-            ? `Gemini did not respond within ${Math.round(timeoutMs / 1000)}s. Check the network connection and try again.`
-            : `Could not reach Gemini: ${error?.message || 'network error'}. Check outbound network access.`,
-          { code: timedOut ? 'AI_TIMEOUT' : 'AI_NETWORK_ERROR', httpStatus: 504 },
-        );
+        throw providerHttpError('Gemini', response.status, raw);
       }
-
-      if (response.ok) {
-        const payload = await response.json().catch(() => null);
-        if (!payload) throw new AIError('Gemini returned a malformed JSON response.', { code: 'AI_BAD_RESPONSE' });
-        return { text: extractGeminiText(payload), model: candidateModel };
-      }
-
-      const raw = await readErrorBody(response);
-      const retryable = response.status === 429 || response.status >= 500;
-      const maybeModelMissing =
-        response.status === 404 ||
-        (response.status === 400 && /not found|unsupported|not supported/i.test(raw));
-      if (maybeModelMissing && index < models.length - 1) break; // try next model immediately
-      if (retryable && attempt === 0) {
-        await sleep(700);
-        continue;
-      }
-      throw providerHttpError('Gemini', response.status, raw);
     }
   }
+
+  if (authError) throw authError;
   throw new AIError('No configured Gemini model could be reached. Check GEMINI_MODEL.', {
     code: 'AI_MODEL_NOT_FOUND',
     httpStatus: 502,

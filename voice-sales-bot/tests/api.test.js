@@ -195,7 +195,7 @@ test('AI failures are reported with real error codes and the customer turn is ke
       const reply = await postJson(base, `/api/calls/${callId}/reply`, { message: 'Hello?' });
       assert.equal(reply.response.status, 502);
       assert.equal(reply.body.error.code, 'AI_AUTH_ERROR');
-      assert.match(reply.body.error.message, /rejected the API key/);
+      assert.match(reply.body.error.message, /rejected the credential/);
       assert.equal(reply.body.customerMessage.content, 'Hello?');
 
       const detail = await getJson(base, `/api/calls/${callId}`);

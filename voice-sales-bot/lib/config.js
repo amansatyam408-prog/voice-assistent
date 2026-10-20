@@ -69,11 +69,13 @@ export function loadConfig(env = process.env, { projectRoot = PROJECT_ROOT } = {
     .map((m) => m.trim())
     .filter(Boolean);
 
-  // Google AI Studio keys start with "AIza" and use the ?key= query parameter.
-  // OAuth access tokens ("AQ." / "ya29.") must be sent as Authorization: Bearer.
-  // GEMINI_AUTH_MODE=key|bearer overrides this detection explicitly.
-  const detectedAuth = /^(AQ\.|ya29\.)/.test(geminiKey) ? 'bearer' : 'key';
-  const authMode = String(env.GEMINI_AUTH_MODE || detectedAuth).toLowerCase() === 'bearer' ? 'bearer' : 'key';
+  // Google accepts credentials two ways: an AI Studio key via ?key= (or the
+  // x-goog-api-key header) and an OAuth access token via Authorization: Bearer.
+  // Key formats are not reliable signals ("AIza...", "AQ...", "ya29..." all
+  // exist), so the default "auto" tries ?key= first and falls back to Bearer on
+  // 401/403. GEMINI_AUTH_MODE=key|bearer pins a single mode.
+  const requestedAuth = String(env.GEMINI_AUTH_MODE || 'auto').trim().toLowerCase();
+  const authMode = ['key', 'bearer'].includes(requestedAuth) ? requestedAuth : 'auto';
 
   const dataDir = path.resolve(projectRoot, env.DATA_DIR || path.join('voice-sales-bot', 'data'));
 

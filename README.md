@@ -130,7 +130,7 @@ npm run verify:ai
 | `GEMINI_API_KEY` | – | Gemini key (required for live AI) |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Primary model |
 | `GEMINI_FALLBACK_MODELS` | `gemini-2.5-flash,gemini-2.0-flash` | Tried when the primary model 404s |
-| `GEMINI_AUTH_MODE` | auto | `key` (`?key=`) or `bearer`; auto uses bearer for `AQ.`/`ya29.` tokens |
+| `GEMINI_AUTH_MODE` | `auto` | `auto` tries `?key=` then `Authorization: Bearer` on 401/403; pin with `key` or `bearer` |
 | `GEMINI_API_BASE_URL` / `GEMINI_API_VERSION` | Google public API | For proxies / Vertex-compatible gateways |
 | `OPENAI_API_KEY` / `OPENAI_MODEL` | – / `gpt-4o-mini` | Alternative provider |
 | `AI_PROVIDER` | `auto` | `auto` \| `gemini` \| `openai` |
@@ -184,6 +184,17 @@ The AI provider is replaced by a protocol-faithful mock (`tests/helpers.js`) so 
 3. Env: `GEMINI_API_KEY` (secret), `GEMINI_MODEL=gemini-2.5-flash`, `DATA_DIR=/var/data`.
 4. Attach a **persistent disk** at `/var/data` (1 GB is plenty) — otherwise SQLite and recordings vanish on redeploy.
 5. Set `NODE_VERSION=24` if Render does not pick it up automatically.
+
+### Live demo (deployed)
+
+| Environment | URL | Storage |
+| --- | --- | --- |
+| **Vercel production** | **https://voice-assistent-pi.vercel.app** | ephemeral (`/tmp`), history resets |
+| Render / Docker with a volume | your own domain | persistent |
+
+The Vercel project (`voice-assistent`) deploys `main` on every push. Check it with
+`GET https://voice-assistent-pi.vercel.app/api/health` — expect `"configured": true`,
+`provider: "gemini"` and `storage.persistent: false`.
 
 ### Vercel (demo deployment)
 `vercel.json` + `api/index.mjs` are included. The Node HTTP handler is mounted as one serverless function:
