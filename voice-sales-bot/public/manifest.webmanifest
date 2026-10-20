@@ -1,0 +1,17 @@
+{
+  "name": "Voxly — AI Voice Sales Bot",
+  "short_name": "Voxly",
+  "description": "AI voice sales agent for SaaS products with recordings, AI summaries and call history.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080b16",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

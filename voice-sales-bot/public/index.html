@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="Voxly — AI voice sales bot for SaaS. Real-time voice conversations, recordings, AI summaries and call history." />
+    <meta name="theme-color" content="#0b1020" />
+    <title>Voxly — AI Voice Sales Bot</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to main content</a>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" role="img">
+              <path d="M5 12v8M11 7v18M16 10v12M21 5v22M27 13v6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" />
+            </svg>
+          </span>
+          <span class="brand-text">
+            <strong>Voxly</strong>
+            <small>AI Voice Sales Bot</small>
+          </span>
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Primary">
+          <button class="tab is-active" data-view="dialer" role="tab" aria-selected="true" aria-controls="view-dialer" id="tab-dialer">
+            <span aria-hidden="true">◉</span> Dialer
+          </button>
+          <button class="tab" data-view="history" role="tab" aria-selected="false" aria-controls="view-history" id="tab-history">
+            <span aria-hidden="true">☰</span> Call history
+          </button>
+          <button class="tab" data-view="insights" role="tab" aria-selected="false" aria-controls="view-insights" id="tab-insights">
+            <span aria-hidden="true">◑</span> Insights
+          </button>
+        </nav>
+
+        <div class="topbar-status">
+          <span class="pill" id="aiPill" data-state="loading">
+            <span class="dot" aria-hidden="true"></span>
+            <span id="aiPillText">Checking AI…</span>
+          </span>
+        </div>
+      </header>
+
+      <div class="banner" id="resumeBanner" hidden role="alert">
+        <div>
+          <strong>An unfinished call exists.</strong>
+          <span id="resumeText">Resume it to keep the transcript, or end it before starting a new call.</span>
+        </div>
+        <div class="banner-actions">
+          <button class="btn btn-ghost btn-sm" id="resumeBtn">Resume call</button>
+          <button class="btn btn-ghost btn-sm" id="resumeEndBtn">End it</button>
+        </div>
+      </div>
+
+      <main id="main">
+        <!-- ============================ DIALER ============================ -->
+        <section class="view is-active" id="view-dialer" role="tabpanel" aria-labelledby="tab-dialer" tabindex="-1">
+          <div class="dialer-grid">
+            <div class="stage card" id="stage">
+              <div class="stage-head">
+                <div class="conn" id="connState" data-state="idle">
+                  <span class="dot" aria-hidden="true"></span>
+                  <span id="connText">Not connected</span>
+                </div>
+                <div class="stage-timer" aria-live="off">
+                  <span class="sr-only">Call duration</span>
+                  <span id="callTimer">00:00</span>
+                </div>
+                <div class="stage-badge" id="stageBadge" hidden></div>
+              </div>
+
+              <div class="orb-wrap">
+                <div class="orb" id="orb" data-state="idle" aria-hidden="true">
+                  <span class="ring r1"></span>
+                  <span class="ring r2"></span>
+                  <span class="ring r3"></span>
+                  <span class="core"></span>
+                </div>
+                <p class="orb-caption" id="orbCaption">Ready when you are</p>
+                <p class="stage-product" id="stageProduct">FlowPilot</p>
+                <p class="stage-ai" id="stageAiNote">AI provider status loading…</p>
+              </div>
+
+              <div class="controls" role="group" aria-label="Call controls">
+                <button class="btn btn-primary btn-call" id="startBtn" type="button">
+                  <span aria-hidden="true">📞</span> Start call
+                </button>
+                <button class="btn btn-danger btn-call" id="endBtn" type="button" disabled>
+                  <span aria-hidden="true">⏹</span> End call
+                </button>
+                <button class="btn btn-ghost" id="muteBtn" type="button" disabled aria-pressed="false">
+                  <span aria-hidden="true">🎙</span> <span id="muteLabel">Mute mic</span>
+                </button>
+              </div>
+
+              <p class="mic-help" id="micHelp" role="status">
+                Microphone access is requested when you start the call.
+              </p>
+            </div>
+
+            <aside class="side card" aria-label="Call setup">
+              <div class="side-block">
+                <h2 class="side-title">SaaS product</h2>
+                <div class="product-list" id="productList" role="radiogroup" aria-label="Choose the SaaS product to sell">
+                  <div class="skeleton sk-row"></div>
+                  <div class="skeleton sk-row"></div>
+                </div>
+                <p class="product-desc" id="productDesc">Loading product catalogue…</p>
+              </div>
+
+              <div class="side-block">
+                <h2 class="side-title">Language</h2>
+                <div class="segmented" id="languageGroup" role="radiogroup" aria-label="Conversation language">
+                  <label class="seg">
+                    <input type="radio" name="language" value="en" checked />
+                    <span>English</span>
+                  </label>
+                  <label class="seg">
+                    <input type="radio" name="language" value="hi" />
+                    <span>हिंदी</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="side-block">
+                <h2 class="side-title">Recording consent</h2>
+                <label class="checkbox">
+                  <input type="checkbox" id="consentCheck" />
+                  <span>I have the customer's consent to record this conversation.</span>
+                </label>
+                <p class="hint" id="recordingSupport">
+                  Checking browser recording support…
+                </p>
+              </div>
+
+              <div class="side-block ai-card" id="aiCard">
+                <h2 class="side-title">AI engine</h2>
+                <dl class="kv">
+                  <div><dt>Provider</dt><dd id="aiProvider">—</dd></div>
+                  <div><dt>Model</dt><dd id="aiModel">—</dd></div>
+                  <div><dt>Speech input</dt><dd id="aiStt">—</dd></div>
+                  <div><dt>Speech output</dt><dd id="aiTts">—</dd></div>
+                </dl>
+                <p class="hint" id="aiHint"></p>
+              </div>
+            </aside>
+          </div>
+
+          <div class="lower-grid">
+            <section class="chat card" aria-labelledby="chatHeading">
+              <div class="card-head">
+                <h2 id="chatHeading">Live conversation</h2>
+                <span class="live" id="liveIndicator" hidden><span class="dot" aria-hidden="true"></span> Live</span>
+              </div>
+
+              <div class="chat-log" id="chatLog" role="log" aria-live="polite" aria-relevant="additions text">
+                <div class="empty" id="chatEmpty">
+                  <p class="empty-title">No conversation yet</p>
+                  <p>Choose a product and language, add recording consent if you want audio saved, then press <strong>Start call</strong>.</p>
+                </div>
+              </div>
+
+              <p class="interim" id="interimLine" aria-live="polite"></p>
+
+              <form class="composer" id="textForm" novalidate>
+                <label class="sr-only" for="textInput">Type a message if you prefer not to speak</label>
+                <input
+                  id="textInput"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="Call not started — start a call to chat"
+                  maxlength="2000"
+                  disabled
+                />
+                <button class="btn btn-primary" id="sendBtn" type="submit" disabled>Send</button>
+              </form>
+            </section>
+
+            <section class="postcall card" id="postcallPanel" aria-labelledby="postcallHeading" hidden>
+              <div class="card-head">
+                <h2 id="postcallHeading">Call outcome</h2>
+                <span class="status-badge" id="outcomeBadge" hidden></span>
+              </div>
+
+              <div id="postcallBody">
+                <div class="rec-block" id="recBlock">
+                  <h3>Recording</h3>
+                  <p class="hint" id="recNote"></p>
+                  <audio id="recPlayer" controls preload="metadata" hidden></audio>
+                  <div class="rec-error" id="recError" hidden></div>
+                </div>
+                <div class="summary-block" id="summaryBlock">
+                  <h3>AI summary</h3>
+                  <div id="summaryBody" class="summary-body">
+                    <div class="skeleton sk-line"></div>
+                  </div>
+                  <div class="inline-actions">
+                    <button class="btn btn-ghost btn-sm" id="regenSummaryBtn" type="button" hidden>Regenerate summary</button>
+                    <button class="btn btn-primary btn-sm" id="newCallBtn" type="button">Start another call</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <!-- ============================ HISTORY ============================ -->
+        <section class="view" id="view-history" role="tabpanel" aria-labelledby="tab-history" tabindex="-1" hidden>
+          <div class="section-head">
+            <div>
+              <h1>Call history</h1>
+              <p class="muted">Every conversation, transcript, recording, AI summary and sales status — stored in SQLite on the server.</p>
+            </div>
+            <div class="section-actions">
+              <button class="btn btn-ghost" id="refreshHistoryBtn" type="button">Refresh</button>
+              <button class="btn btn-ghost" id="exportBtn" type="button">Export JSON</button>
+            </div>
+          </div>
+
+          <div class="stats-grid" id="historyStats" aria-label="Call statistics"></div>
+
+          <div class="filters card">
+            <div class="field">
+              <label for="statusFilter">Status</label>
+              <select id="statusFilter">
+                <option value="all">All statuses</option>
+                <option>Converted</option>
+                <option>Interested</option>
+                <option>Follow-up Required</option>
+                <option>Not Interested</option>
+                <option>Demo Requested</option>
+                <option>No Response</option>
+              </select>
+            </div>
+            <div class="field grow">
+              <label for="searchInput">Search transcripts and products</label>
+              <input id="searchInput" type="search" placeholder="e.g. pricing, demo, security" autocomplete="off" />
+            </div>
+          </div>
+
+          <div id="historyList" class="history-list" aria-live="polite">
+            <div class="skeleton sk-card"></div>
+          </div>
+        </section>
+
+        <!-- ============================ INSIGHTS ============================ -->
+        <section class="view" id="view-insights" role="tabpanel" aria-labelledby="tab-insights" tabindex="-1" hidden>
+          <div class="section-head">
+            <div>
+              <h1>Sales insights</h1>
+              <p class="muted">Outcome distribution across all stored calls.</p>
+            </div>
+          </div>
+          <div class="stats-grid" id="insightStats"></div>
+          <div class="card">
+            <div class="card-head"><h2>Status distribution</h2></div>
+            <div id="statusChart" class="chart"></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h2>Recent outcomes</h2></div>
+            <div id="recentOutcomes" class="recent-list"></div>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <p>
+          Voxly · AI sales calls powered by a server-side LLM. Audio is recorded only with explicit consent and stored on the server.
+          <span id="footerStorage"></span>
+        </p>
+      </footer>
+    </div>
+
+    <div class="toast-region" id="toastRegion" role="alert" aria-live="assertive"></div>
+
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

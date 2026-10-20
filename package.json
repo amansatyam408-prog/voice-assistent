@@ -1,14 +1,19 @@
 {
-  "name": "voice-sales-bot-root",
-  "version": "1.0.0",
-  "description": "AI Voice Sales Bot Root Workspace",
+  "name": "voice-sales-bot",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Voxly — AI Voice Sales Bot with live voice conversations, recordings, AI summaries and call history",
   "type": "module",
+  "main": "voice-sales-bot/server.js",
   "scripts": {
-    "start": "node voice-sales-bot/server.js",
-    "dev": "node --watch voice-sales-bot/server.js",
-    "test": "node --test voice-sales-bot/tests/*.test.js"
+    "start": "node --disable-warning=ExperimentalWarning voice-sales-bot/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch voice-sales-bot/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test voice-sales-bot/tests/*.test.js",
+    "check": "node --check voice-sales-bot/server.js && node --check voice-sales-bot/public/app.js",
+    "verify:ai": "node --disable-warning=ExperimentalWarning voice-sales-bot/scripts/verify-ai.mjs"
   },
   "engines": {
-    "node": ">=18"
-  }
+    "node": ">=22.13.0"
+  },
+  "dependencies": {}
 }
