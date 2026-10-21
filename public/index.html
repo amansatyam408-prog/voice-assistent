@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0b1020"/>
+  <title>Voxly — AI Voice Sales Agent</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<div class="app-shell">
+  <!-- Left Navigation Sidebar -->
+  <aside class="sidebar" aria-label="Sidebar navigation">
+    <div class="brand">
+      <div class="brand-mark">✳</div>
+      <div>
+        <strong>voxly</strong>
+        <small>AI SALES STUDIO</small>
+      </div>
+    </div>
+    <div class="workspace-label">WORKSPACE</div>
+    <nav class="nav-menu">
+      <button class="nav-item active" data-view="call" id="nav-call">
+        <span aria-hidden="true">◉</span> Live sales call <kbd>01</kbd>
+      </button>
+      <button class="nav-item" data-view="history" id="nav-history">
+        <span aria-hidden="true">◷</span> Call history <kbd id="history-count">0</kbd>
+      </button>
+      <button class="nav-item" data-view="insights" id="nav-insights">
+        <span aria-hidden="true">▥</span> Sales insights
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="status-dot" id="system-status-dot"></div>
+      <div>
+        <strong id="system-status-title">Voice engine ready</strong>
+        <small id="system-status-sub">Browser speech services</small>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main class="main-area" role="main">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">SALES AUTOMATION / REAL-TIME VOICE</div>
+        <h1 id="page-title">Live sales call</h1>
+      </div>
+      <div class="top-actions">
+        <button class="ai-status-pill" id="ai-status-pill" title="Click to configure AI API key">
+          <span class="status-indicator-dot" id="ai-indicator-dot"></span>
+          <span id="ai-status-label">Checking AI...</span>
+        </button>
+        <button class="settings-pill" id="open-settings-btn" title="Open Settings & API Keys">
+          <span>⚙</span> Settings
+        </button>
+        <div class="avatar" title="Voice Sales Agent">VS</div>
+      </div>
+    </header>
+
+    <!-- VIEW 1: LIVE SALES CALL -->
+    <section id="call-view" class="view" aria-labelledby="page-title">
+      <div class="hero-row">
+        <div>
+          <div class="live-label">
+            <span class="pulse"></span> VOICE AGENT <span class="divider">/</span> READY TO CONNECT
+          </div>
+          <h2>Turn conversations<br/>into <span>customers.</span></h2>
+          <p class="hero-copy">An AI-powered voice sales assistant that speaks with customers, answers product questions in English or Hindi, handles objections, and qualifies leads.</p>
+        </div>
+        <div class="hero-orb" aria-hidden="true">
+          <div class="orb-core" id="orb-visual">✳</div>
+          <span class="orb-ring ring-one"></span>
+          <span class="orb-ring ring-two"></span>
+          <span class="orb-ring ring-three"></span>
+          <div class="orb-caption">VOXLY AI <span id="orb-status-text">● ONLINE</span></div>
+        </div>
+      </div>
+
+      <div class="call-layout">
+        <!-- Center Conversation Area -->
+        <section class="panel conversation-panel" aria-label="Live conversation stream">
+          <div class="panel-heading">
+            <div>
+              <span class="section-kicker">LIVE SESSION</span>
+              <h3>Conversation</h3>
+            </div>
+            <div class="call-state" id="call-state" role="status" aria-live="polite">
+              <span class="state-dot"></span> <span id="call-state-text">Ready to start</span>
+            </div>
+          </div>
+
+          <!-- Session Metadata Bar -->
+          <div class="session-strip">
+            <div class="session-icon" id="session-icon">♫</div>
+            <div class="session-meta">
+              <strong id="session-name">New sales conversation</strong>
+              <small id="session-subtitle">Click 'Start call' to begin speaking</small>
+            </div>
+            <div class="recording-badge hidden" id="rec-indicator" title="Audio recording is active with consent">
+              <span class="rec-dot"></span> REC
+            </div>
+            <div class="timer" id="timer" aria-label="Call duration">00:00</div>
+          </div>
+
+          <!-- Real-Time Chat Stream -->
+          <div id="transcript" class="transcript" role="log" aria-live="polite" aria-label="Transcript of conversation">
+            <div class="empty-state">
+              <div class="empty-icon">◖</div>
+              <strong>Your next customer conversation starts here</strong>
+              <p>Check recording consent, click <strong>Start call</strong>, and speak into your microphone. You can also type customer responses in the box below.</p>
+            </div>
+          </div>
+
+          <!-- Live Thinking Indicator -->
+          <div id="typing-indicator" class="typing-indicator hidden">
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <span id="typing-label">Voxly AI is thinking...</span>
+          </div>
+
+          <!-- Inline Call Finished Recording Banner -->
+          <div id="inline-recording-bar" class="inline-recording-bar hidden">
+            <div class="rec-bar-icon">🎙</div>
+            <div class="rec-bar-info">
+              <strong>Call Recording Available</strong>
+              <small id="rec-bar-meta">Duration: 00:00</small>
+            </div>
+            <audio id="inline-audio" controls class="inline-audio-player"></audio>
+          </div>
+
+          <!-- Controls and Compose Area -->
+          <div class="compose-area">
+            <div class="consent-row">
+              <label class="check-label" for="consent">
+                <input id="consent" type="checkbox"/>
+                <span>I have consent to record this conversation (audio & transcript).</span>
+              </label>
+              <span class="privacy-note" id="consent-help">Recording stays off until checked</span>
+            </div>
+
+            <!-- Fallback text message input -->
+            <div class="compose-row">
+              <input id="text-input" type="text" placeholder="Speak into mic or type customer response here…" disabled aria-label="Customer message input"/>
+              <button id="send-btn" class="send-btn" disabled aria-label="Send customer message" title="Send message">↑</button>
+            </div>
+
+            <!-- Primary Call Action Controls -->
+            <div class="controls">
+              <button id="start-btn" class="primary-btn">
+                <span>▶</span> Start call
+              </button>
+              <button id="end-btn" class="end-btn" disabled>
+                <span>■</span> End call
+              </button>
+              <button id="mic-btn" class="icon-btn" title="Toggle microphone listening" disabled aria-label="Toggle microphone">
+                🎙
+              </button>
+              <button id="tts-btn" class="icon-btn" title="Toggle AI voice response speaking aloud" aria-label="Toggle voice output">
+                🔊
+              </button>
+              <span class="controls-hint">Microphone input supported. Text fallback always active.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Right Side Configuration Column -->
+        <aside class="right-column">
+          <!-- Product & Language Setup -->
+          <section class="panel product-panel" aria-label="Call setup">
+            <div class="panel-heading compact">
+              <div>
+                <span class="section-kicker">CALL CONFIGURATION</span>
+                <h3>Sales setup</h3>
+              </div>
+              <span class="gear">⚙</span>
+            </div>
+
+            <label class="field-label" for="product">Product to sell</label>
+            <select id="product">
+              <option value="FlowPilot">FlowPilot (Workflow Automation)</option>
+              <option value="CloudDesk">CloudDesk (Customer Support Helpdesk)</option>
+              <option value="TeamSync">TeamSync (Agile Project Management)</option>
+              <option value="Custom SaaS">Custom SaaS Product</option>
+            </select>
+
+            <div id="custom-product-fields" class="custom-fields hidden">
+              <input id="custom-product-name" type="text" placeholder="Custom SaaS Name (e.g. DataPulse)" class="custom-input"/>
+              <textarea id="custom-product-desc" placeholder="Brief product description & pricing..." class="custom-textarea" rows="2"></textarea>
+            </div>
+
+            <label class="field-label" for="language">Conversation language</label>
+            <select id="language">
+              <option value="English">English (United States / Global)</option>
+              <option value="Hindi">Hindi (हिंदी - Conversational)</option>
+              <option value="Telugu">Telugu (తెలుగు)</option>
+            </select>
+
+            <div class="product-preview">
+              <div class="product-logo" id="product-logo">F</div>
+              <div>
+                <strong id="product-name">FlowPilot</strong>
+                <small id="product-summary">Workflow & process automation platform</small>
+              </div>
+              <span class="verified">VERIFIED</span>
+            </div>
+            <p class="micro-copy" id="product-desc">AI sales assistant has verified knowledge of features, pricing tiers, integrations, and common objection handling.</p>
+          </section>
+
+          <!-- Real-Time Sales Qualification -->
+          <section class="panel outcome-panel" aria-label="Live qualification outcome">
+            <div class="panel-heading compact">
+              <div>
+                <span class="section-kicker">LIVE QUALIFICATION</span>
+                <h3>Sales outcome</h3>
+              </div>
+              <span class="sparkle">✧</span>
+            </div>
+            <div class="outcome-status" id="outcome-status">
+              <span class="status-bullet"></span>
+              <span id="status-text">Awaiting conversation</span>
+            </div>
+            <div class="outcome-metrics">
+              <div>
+                <span>Customer turns</span>
+                <strong id="turn-count">0</strong>
+              </div>
+              <div>
+                <span>Objections found</span>
+                <strong id="objection-count">0</strong>
+              </div>
+            </div>
+            <button class="outline-btn" id="summary-btn" disabled>
+              ✧ Generate call summary <span>→</span>
+            </button>
+          </section>
+
+          <!-- Voice Tips -->
+          <section class="mini-note">
+            <div class="note-icon">✦</div>
+            <div>
+              <strong>Voice-First Sales Principles</strong>
+              <p>Listen attentively. Answer pricing & security questions transparently. Guide customers toward a demo or pilot.</p>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+
+    <!-- VIEW 2: CALL HISTORY -->
+    <section id="history-view" class="view hidden" aria-labelledby="history-heading">
+      <div class="section-intro">
+        <div>
+          <span class="section-kicker">PERSISTENT STORAGE</span>
+          <h2 id="history-heading">Call history</h2>
+          <p>Review full transcripts, recordings, summaries, and sales classifications saved to SQLite.</p>
+        </div>
+        <div class="history-header-actions">
+          <input type="text" id="history-search" class="history-search" placeholder="Search transcript or product…"/>
+          <button class="outline-btn" id="export-btn">↓ Export JSON</button>
+        </div>
+      </div>
+
+      <!-- Filter Pills -->
+      <div class="filter-pills" role="tablist" aria-label="Filter call history by status">
+        <button class="filter-pill active" data-filter="all">All (<span id="count-all">0</span>)</button>
+        <button class="filter-pill" data-filter="Converted">Converted (<span id="count-converted">0</span>)</button>
+        <button class="filter-pill" data-filter="Interested">Interested (<span id="count-interested">0</span>)</button>
+        <button class="filter-pill" data-filter="Demo Requested">Demo Requested (<span id="count-demo">0</span>)</button>
+        <button class="filter-pill" data-filter="Follow-up Required">Follow-up (<span id="count-followup">0</span>)</button>
+        <button class="filter-pill" data-filter="Not Interested">Not Interested (<span id="count-notinterested">0</span>)</button>
+      </div>
+
+      <div id="history-list" class="history-list">
+        <!-- Rendered by app.js from SQLite -->
+      </div>
+    </section>
+
+    <!-- VIEW 3: SALES INSIGHTS -->
+    <section id="insights-view" class="view hidden" aria-labelledby="insights-heading">
+      <div class="section-intro">
+        <div>
+          <span class="section-kicker">PERFORMANCE ANALYTICS</span>
+          <h2 id="insights-heading">Sales insights</h2>
+          <p>Real-time analytics and conversion distribution calculated directly from saved calls.</p>
+        </div>
+      </div>
+      <div class="insight-grid">
+        <div class="panel insight-card">
+          <span>Total Calls Completed</span>
+          <strong id="insight-total">0</strong>
+          <small id="insight-total-sub">Saved in database</small>
+        </div>
+        <div class="panel insight-card">
+          <span>High-Interest Pipeline</span>
+          <strong id="insight-interested">0</strong>
+          <small>Converted + Demos + Interested</small>
+        </div>
+        <div class="panel insight-card">
+          <span>Follow-up Actions</span>
+          <strong id="insight-followup">0</strong>
+          <small>Leads requesting callback / email</small>
+        </div>
+      </div>
+
+      <div class="panel insights-detail">
+        <div class="insights-detail-header">
+          <h3>Sales Classification Distribution</h3>
+          <span class="mini-tag" id="insights-call-count">0 calls recorded</span>
+        </div>
+        <div id="outcome-bars"></div>
+      </div>
+    </section>
+
+    <footer>
+      <span>VOXLY <span class="footer-dot">●</span> AI SALES STUDIO</span>
+      <span>Sankar Group Internship Project · Secure Backend AI & Persistent SQLite Storage</span>
+    </footer>
+  </main>
+</div>
+
+<!-- MODAL 1: AI SUMMARY & CALL INTELLIGENCE -->
+<div id="summary-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="summary-modal-title">
+  <div class="modal-card">
+    <button class="modal-close" id="close-modal" aria-label="Close summary modal">×</button>
+    <span class="section-kicker">CONVERSATION INTELLIGENCE</span>
+    <h2 id="summary-modal-title">Call Summary & Classification</h2>
+
+    <!-- Summary Modal Audio Player if recording exists -->
+    <div id="modal-audio-container" class="modal-audio-box hidden">
+      <span class="audio-label">▶ Listen to Call Recording:</span>
+      <audio id="modal-audio-player" controls class="full-audio-player"></audio>
+    </div>
+
+    <!-- Content rendered dynamically -->
+    <div id="summary-content"></div>
+
+    <div class="modal-actions">
+      <button id="save-summary" class="primary-btn full-btn">Save to Call History</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2: SETTINGS & API CONFIGURATION -->
+<div id="settings-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+  <div class="modal-card">
+    <button class="modal-close" id="close-settings" aria-label="Close settings modal">×</button>
+    <span class="section-kicker">CONFIGURATION</span>
+    <h2 id="settings-modal-title">AI Engine & Voice Settings</h2>
+
+    <div class="settings-group">
+      <label class="settings-label" for="settings-provider">AI Provider</label>
+      <select id="settings-provider" class="settings-select">
+        <option value="gemini">Google Gemini (Recommended: gemini-2.0-flash)</option>
+        <option value="openai">OpenAI (gpt-4o-mini)</option>
+      </select>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label" for="settings-api-key">API Key</label>
+      <input type="password" id="settings-api-key" class="settings-input" placeholder="Paste your API key here (e.g. AIzaSy... or sk-...)"/>
+      <small class="settings-help">The API key is securely transmitted to the backend environment and never exposed in client bundles. You can also define <code>GEMINI_API_KEY</code> in your <code>.env</code> file.</small>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label" for="settings-voice-select">Speech Synthesis Voice</label>
+      <select id="settings-voice-select" class="settings-select">
+        <option value="default">Default Browser Voice</option>
+      </select>
+    </div>
+
+    <div class="settings-group">
+      <label class="settings-label">Offline Simulation Mode</label>
+      <label class="toggle-label">
+        <input type="checkbox" id="settings-offline-toggle" checked/>
+        <span>Allow offline simulation fallback when no API key is set</span>
+      </label>
+      <small class="settings-help">When enabled, the app tests conversation flows offline with clear "Offline Simulation" labeling so you know it's not live AI.</small>
+    </div>
+
+    <div class="settings-actions">
+      <button id="save-settings-btn" class="primary-btn full-btn">Save Settings & Test Connection</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persistent Toast Notifications -->
+<div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

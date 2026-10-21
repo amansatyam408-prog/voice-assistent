@@ -1,0 +1,17 @@
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# SQLite database & recordings (local only)
+data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
