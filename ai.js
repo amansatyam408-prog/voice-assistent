@@ -118,7 +118,7 @@ export function getAiConfig() {
     activeProvider,
     hasGemini,
     hasOpenAI,
-    model: hasGemini ? (process.env.GEMINI_MODEL || 'gemini-1.5-flash') : hasOpenAI ? 'gpt-4o-mini' : 'none',
+    model: hasGemini ? (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite') : hasOpenAI ? 'gpt-4o-mini' : 'none',
     allowOfflineFallback: process.env.ALLOW_OFFLINE_DEMO !== 'false'
   };
 }
@@ -168,8 +168,8 @@ export async function generateSalesReply({
  */
 async function callGeminiForReply(systemPrompt, history, currentMessage, language, productInfo) {
   const apiKey = process.env.GEMINI_API_KEY;
-  const primaryModel = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-  const fallbackModel = 'gemini-1.5-pro';
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+  const fallbackModel = 'gemini-3.5-flash';
 
   const formatTurn = (m) => ({
     role: m.role === 'assistant' ? 'model' : 'user',
@@ -185,8 +185,7 @@ async function callGeminiForReply(systemPrompt, history, currentMessage, languag
     generationConfig: {
       temperature: 0.5,
       maxOutputTokens: 600,
-      topP: 0.95,
-      thinkingConfig: { thinkingBudget: 0 }
+      topP: 0.95
     }
   };
 
@@ -405,7 +404,7 @@ Respond with ONLY valid JSON, with no surrounding markdown or explanation.`;
     let raw = '';
     if (config.activeProvider === 'gemini') {
       const apiKey = process.env.GEMINI_API_KEY;
-      const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+      const model = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       const res = await fetch(url, {
         method: 'POST',
@@ -414,8 +413,7 @@ Respond with ONLY valid JSON, with no surrounding markdown or explanation.`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 1200,
-            thinkingConfig: { thinkingBudget: 0 }
+            maxOutputTokens: 1200
           }
         })
       });
